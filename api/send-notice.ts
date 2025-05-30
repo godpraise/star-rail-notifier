@@ -1,11 +1,8 @@
-// /api/send-notice.ts
-
 import axios from "axios";
 import * as cheerio from "cheerio";
 
-// ⏰ Vercel에서 매 정시마다 실행되도록 설정
 export const config = {
-  schedule: "0 * * * *", // 매시간 정각 실행
+  schedule: "0 * * * *",
 };
 
 export default async function handler(req: any, res: any) {
@@ -13,7 +10,6 @@ export default async function handler(req: any, res: any) {
     const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
     if (!WEBHOOK_URL) throw new Error("웹훅 URL이 설정되지 않았습니다.");
 
-    // 카테고리 정의
     const CATEGORIES: Record<string, string> = {
       notices: "📢 공지사항",
       news: "📰 소식",
@@ -28,6 +24,12 @@ export default async function handler(req: any, res: any) {
       const firstNotice = $(".article-list .article-item").first();
       const title = firstNotice.find(".title").text().trim();
       const relativeLink = firstNotice.find("a").attr("href");
+
+      if (!relativeLink) {
+        console.warn(`${type} 카테고리에 게시물이 없습니다.`);
+        continue;
+      }
+
       const fullLink = "https://www.hoyolab.com" + relativeLink;
 
       const payload = {
