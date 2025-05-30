@@ -3,42 +3,50 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 
+// ⏰ Vercel에서 매 정시마다 실행되도록 설정
 export const config = {
-  schedule: "0 * * * *", // 매 정시마다 실행
+  schedule: "0 * * * *", // 매시간 정각 실행
 };
 
 export default async function handler(req: any, res: any) {
   try {
     const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+    if (!WEBHOOK_URL) throw new Error("웹훅 URL이 설정되지 않았습니다.");
 
-    if (!WEBHOOK_URL) {
-      throw new Error("웹훅 URL이 설정되지 않았습니다.");
-    }
-
-    const { data: html } = await axios.get("https://www.hoyolab.com/notice");
-    const $ = cheerio.load(html);
-
-    const firstNotice = $(".article-list .article-item").first();
-    const title = firstNotice.find(".title").text().trim();
-    const relativeUrl = firstNotice.find("a").attr("href");
-    const fullUrl = "https://www.hoyolab.com" + relativeUrl;
-
-    const payload = {
-      embeds: [
-        {
-          title: "📢 스타레일 새 공지!",
-          description: `[${title}](${fullUrl})`,
-          color: 0x7289da,
-          timestamp: new Date().toISOString(),
-        },
-      ],
+    // 카테고리 정의
+    const CATEGORIES: Record<string, string> = {
+      notices: "📢 공지사항",
+      news: "📰 소식",
+      events: "🎉 이벤트",
     };
 
-    await axios.post(WEBHOOK_URL, payload);
+    for (const [type, emojiTitle] of Object.entries(CATEGORIES)) {
+      const url = `https://www.hoyolab.com/circles/6/39/official?page_type=39&page_sort=${type}`;
+      const { data: html } = await axios.get(url);
+      const $ = cheerio.load(html);
 
-    res.status(200).json({ message: "공지 전송 완료!" });
+      const firstNotice = $(".article-list .article-item").first();
+      const title = firstNotice.find(".title").text().trim();
+      const relativeLink = firstNotice.find("a").attr("href");
+      const fullLink = "https://www.hoyolab.com" + relativeLink;
+
+      const payload = {
+        embeds: [
+          {
+            title: `${emojiTitle} 새 게시물!`,
+            description: `[${title}](${fullLink})`,
+            color: 0x7289da,
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      };
+
+      await axios.post(WEBHOOK_URL, payload);
+    }
+
+    res.status(200).json({ message: "3개 카테고리 공지 전송 완료!" });
   } catch (err: any) {
-    console.error(err);
+    console.error("공지 전송 중 오류:", err.message);
     res.status(500).json({ message: "공지 전송 실패", error: err.message });
   }
 }
