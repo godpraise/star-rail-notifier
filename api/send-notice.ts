@@ -32,6 +32,9 @@ export default async function handler(req: any, res: any) {
 
       const fullLink = "https://www.hoyolab.com" + relativeLink;
 
+      // 크롤링 결과 로그 찍기
+      console.log(`[${type}] 제목: ${title}, 링크: ${fullLink}`);
+
       const payload = {
         embeds: [
           {
@@ -43,18 +46,18 @@ export default async function handler(req: any, res: any) {
         ],
       };
 
+      // 웹훅 전송 시도 + 에러 잡기
       try {
-        const response = await axios.post(WEBHOOK_URL, payload);
-        console.log(
-          `[${type}] Discord webhook 전송 성공, 상태코드:`,
-          response.status
-        );
-      } catch (error) {
-        console.error(`[${type}] Discord webhook 전송 실패:`, error);
+        await axios.post(WEBHOOK_URL, payload);
+        console.log(`${type} 카테고리 디스코드 알림 전송 성공!`);
+      } catch (err) {
+        console.error(`${type} 카테고리 디스코드 웹훅 전송 오류:`, err);
       }
     }
 
-    res.status(200).json({ message: "3개 카테고리 공지 전송 완료!" });
+    res
+      .status(200)
+      .json({ message: "수동 호출로 3개 카테고리 공지 전송 완료!" });
   } catch (err: any) {
     console.error("공지 전송 중 오류:", err.message);
     res.status(500).json({ message: "공지 전송 실패", error: err.message });
