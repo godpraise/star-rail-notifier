@@ -43,7 +43,15 @@ export default async function handler(req: any, res: any) {
         ],
       };
 
-      await axios.post(WEBHOOK_URL, payload);
+      try {
+        const response = await axios.post(WEBHOOK_URL, payload);
+        console.log(
+          `[${type}] Discord webhook 전송 성공, 상태코드:`,
+          response.status
+        );
+      } catch (error) {
+        console.error(`[${type}] Discord webhook 전송 실패:`, error);
+      }
     }
 
     res.status(200).json({ message: "3개 카테고리 공지 전송 완료!" });
